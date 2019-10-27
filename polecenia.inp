@@ -1,0 +1,83 @@
+#ols log_price const 21 22 23 56 57 58 4 5 59 61 62 64 66 71 72 73 74 75 76 77 79 81 14 15 17 18 19 20
+
+#ols log_price const 21 22 23 56 57 58 4 5 59 61 62 64 66 71 72 73 74 75 76 77 78 79 80 81 82 14 15 17 18 19 20
+
+#wszystkie pozostałe operacje widoczne w projekcie 'wyklikiwałem' lub nie zapisałem skryptu z poleceniami
+
+############# skrypt badajacy zjawisko katalizy z zajec ############
+#para korelacyjna
+matrix R = zeros(k,k)
+matrix R0 = zeros(k,1)
+
+loop foreach i xlist --quiet
+    R0[i] = corr(xlist.$i,y)
+    loop foreach j xlist --quiet
+        R[i,j]=corr(xlist.$i,xlist.$j)
+    endloop
+endloop
+
+R
+R0
+
+#regularna para korelacyjna
+matrix przejscie = zeros(k,2)
+R0_regularne = sort(abs(R0))
+
+loop i=1..k --quiet
+    loop j=1..k --quiet
+        if R0_regularne[i,1] == abs(R0[j,1])
+            przejscie[i,1]=j
+            if R0[j,1]>0
+                przejscie[j,2]=1
+            else
+                przejscie[j,2]=-1
+            endif
+        endif
+    endloop
+endloop
+
+#zamieniemy kolejnosc w R_reg i podmieniamy na -Xi gdy ri<0
+
+matrix R_regularne = zeros(k,k)
+loop i=1..k --quiet
+    loop j=1..k --quiet
+        R_regularne[i,j]=R[przejscie[i,1],przejscie[j,1]]
+        R_regularne[i,j]=przejscie[i,2]*R_regularne[i,j]
+    endloop
+endloop
+
+matrix kat = zeros(k,k)
+loop i=1..k --quiet
+    loop j=1..k --quiet
+        if R_regularne[i,j]<0
+            kat[i,j]=1 #zapalamy gdy jest katalizatorem
+        endif
+    endloop
+endloop
+
+matrix kat2 = zeros(k,k)
+loop i=1..k --quiet
+    loop j=1..k --quiet
+        if R_regularne[i,j]>(R0_regularne[i,1]/R0_regularne[j,1])
+            kat[i,j]=1 #zapalamy gdy jest katalizatorem
+        endif
+    endloop
+endloop
+
+R0   
+R
+przejscie
+R0_regularne
+R_regularne
+kat
+kat2
+
+loop i=1..k --quiet
+    loop j=1..k --quiet
+        if kat[i,j] ==1 || kat2[i,j] == 1
+            printf "zmienna X%d jest katalizatorem\n",i
+            break
+        endif
+    endloop
+endloop
+
